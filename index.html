@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Grupos de Investigación</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+  <style>
+    .grupo-card {
+      border-radius: 12px;
+      padding: 15px;
+      margin-bottom: 20px;
+      color: white;
+    }
+    .grupo-comba {
+      background-color: #0d6efd; /* Azul */
+    }
+    .grupo-gieiam {
+      background-color: #198754; /* Verde */
+    }
+    .semillero-card {
+      background-color: #f8f9fa;
+      border: 1px solid #dee2e6;
+      border-radius: 10px;
+      padding: 12px;
+      margin-top: 10px;
+      color: black;
+    }
+    .section-title {
+      font-size: 1.1rem;
+      font-weight: bold;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body class="container py-4">
+  <h1 class="mb-4">Gestión de Grupos de Investigación</h1>
+
+  <!-- Botón y lista GET -->
+  <button id="btnCargar" class="btn btn-primary mb-3">Cargar Grupos</button>
+  <ul id="listaGrupos" class="list-group mb-4"></ul>
+
+  <!-- Formulario registrar docente -->
+  <h2>Registrar Docente</h2>
+  <form id="formDocente" class="mb-4">
+    <input type="text" class="form-control mb-2" name="nombre" placeholder="Nombre docente" required>
+    <input type="text" class="form-control mb-2" name="formacion" placeholder="Formación académica" required>
+    <input type="text" class="form-control mb-2" name="horario" placeholder="Horario de atención" required>
+    <select class="form-control mb-2" name="grupo" required>
+      <option value="COMBA I+D">COMBA I+D</option>
+      <option value="GIEIAM">GIEIAM</option>
+    </select>
+    <button type="submit" class="btn btn-success">Registrar Docente</button>
+  </form>
+
+  <!-- Formulario registrar estudiante -->
+  <h2>Vincular Estudiante a Semillero</h2>
+  <form id="formEstudiante" class="mb-4">
+    <input type="text" class="form-control mb-2" name="nombre" placeholder="Nombre estudiante" required>
+    <input type="text" class="form-control mb-2" name="codigo" placeholder="Código" required>
+    <input type="text" class="form-control mb-2" name="carrera" placeholder="Carrera" required>
+    <select class="form-control mb-2" id="grupoEstudiante" name="grupo" required>
+      <option value="">Seleccione grupo</option>
+      <option value="COMBA I+D">COMBA I+D</option>
+      <option value="GIEIAM">GIEIAM</option>
+    </select>
+    <select class="form-control mb-2" id="semilleroEstudiante" name="semillero" required>
+      <option value="">Seleccione semillero</option>
+    </select>
+    <button type="submit" class="btn btn-success">Vincular Estudiante</button>
+  </form>
+
+  <!-- Formulario registrar actividad -->
+  <h2>Agregar Actividad a Semillero</h2>
+  <form id="formActividad" class="mb-4">
+    <select class="form-control mb-2" id="grupoActividad" name="grupo" required>
+      <option value="">Seleccione grupo</option>
+      <option value="COMBA I+D">COMBA I+D</option>
+      <option value="GIEIAM">GIEIAM</option>
+    </select>
+    <select class="form-control mb-2" id="semilleroActividad" name="semillero" required>
+      <option value="">Seleccione semillero</option>
+    </select>
+    <select class="form-control mb-2" name="tipo" required>
+      <option value="Taller">Taller</option>
+      <option value="Conferencia">Conferencia</option>
+      <option value="Evento de Integración">Evento de Integración</option>
+    </select>
+    <input type="date" class="form-control mb-2" name="fecha" required>
+    <input type="time" class="form-control mb-2" name="hora" required>
+    <input type="number" class="form-control mb-2" name="limite" placeholder="Límite de asistentes" required>
+    <textarea class="form-control mb-2" name="resumen" placeholder="Resumen de la actividad" required></textarea>
+    <button type="submit" class="btn btn-success">Agregar Actividad</button>
+  </form>
+
+  <!-- Listado general -->
+  <h2>Listado General</h2>
+  <div id="listados"></div>
+
+  <script>
+    const lista = document.getElementById("listaGrupos");
+    const btnCargar = document.getElementById("btnCargar");
+    const formDocente = document.getElementById("formDocente");
+    const formEstudiante = document.getElementById("formEstudiante");
+    const formActividad = document.getElementById("formActividad");
+    const grupoEstudiante = document.getElementById("grupoEstudiante");
+    const semilleroEstudiante = document.getElementById("semilleroEstudiante");
+    const grupoActividad = document.getElementById("grupoActividad");
+    const semilleroActividad = document.getElementById("semilleroActividad");
+    const listados = document.getElementById("listados");
+
+    // Datos iniciales
+    const grupos = {
+      "COMBA I+D": {
+        descripcion: "Grupo COMBA I+D, innovación y desarrollo.",
+        director: "Dra. Ana Pérez",
+        semilleros: {
+          "Comba": { estudiantes: [], actividades: [] },
+          "Informa": { estudiantes: [], actividades: [] }
+        },
+        docentes: []
+      },
+      "GIEIAM": {
+        descripcion: "Grupo GIEIAM, estudios avanzados en ingeniería.",
+        director: "Dr. Juan Gómez",
+        semilleros: {
+          "Geiam": { estudiantes: [], actividades: [] },
+          "Encontrar": { estudiantes: [], actividades: [] }
+        },
+        docentes: []
+      }
+    };
+
+    // Cargar grupos (GET simulado)
+    btnCargar.addEventListener("click", () => {
+      lista.innerHTML = "";
+      Object.keys(grupos).forEach(grupo => {
+        const li = document.createElement("li");
+        li.className = "list-group-item";
+        li.textContent = `${grupo} - Dirigido por ${grupos[grupo].director}`;
+        lista.appendChild(li);
+      });
+    });
+
+    // Registrar docente
+    formDocente.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const data = Object.fromEntries(new FormData(formDocente));
+      grupos[data.grupo].docentes.push(data);
+      alert("Docente registrado en " + data.grupo);
+      formDocente.reset();
+      renderListados();
+    });
+
+    // Cambiar semilleros según grupo (Estudiante)
+    grupoEstudiante.addEventListener("change", () => {
+      const grupo = grupoEstudiante.value;
+      semilleroEstudiante.innerHTML = '<option value="">Seleccione semillero</option>';
+      if (grupo && grupos[grupo]) {
+        Object.keys(grupos[grupo].semilleros).forEach(s => {
+          semilleroEstudiante.innerHTML += `<option value="${s}">${s}</option>`;
+        });
+      }
+    });
+
+    // Registrar estudiante
+    formEstudiante.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const data = Object.fromEntries(new FormData(formEstudiante));
+      grupos[data.grupo].semilleros[data.semillero].estudiantes.push(data);
+      alert("Estudiante vinculado al semillero " + data.semillero);
+      formEstudiante.reset();
+      renderListados();
+    });
+
+    // Cambiar semilleros según grupo (Actividad)
+    grupoActividad.addEventListener("change", () => {
+      const grupo = grupoActividad.value;
+      semilleroActividad.innerHTML = '<option value="">Seleccione semillero</option>';
+      if (grupo && grupos[grupo]) {
+        Object.keys(grupos[grupo].semilleros).forEach(s => {
+          semilleroActividad.innerHTML += `<option value="${s}">${s}</option>`;
+        });
+      }
+    });
+
+    // Registrar actividad
+    formActividad.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const data = Object.fromEntries(new FormData(formActividad));
+      grupos[data.grupo].semilleros[data.semillero].actividades.push(data);
+      alert("Actividad agregada al semillero " + data.semillero);
+      formActividad.reset();
+      renderListados();
+    });
+
+    // Renderizar listados organizados
+    function renderListados() {
+      listados.innerHTML = "";
+      Object.keys(grupos).forEach(grupo => {
+        const divGrupo = document.createElement("div");
+        divGrupo.className = `grupo-card ${grupo === "COMBA I+D" ? "grupo-comba" : "grupo-gieiam"}`;
+
+        divGrupo.innerHTML = `
+          <h3>${grupo}</h3>
+          <p>${grupos[grupo].descripcion}</p>
+          <p><strong>Director:</strong> ${grupos[grupo].director}</p>
+          <h5 class="section-title">Docentes</h5>
+          <ul>${grupos[grupo].docentes.map(d => `<li>${d.nombre} (${d.formacion}, ${d.horario})</li>`).join("") || "<li>No hay docentes registrados</li>"}</ul>
+        `;
+
+        // Semilleros
+        Object.keys(grupos[grupo].semilleros).forEach(s => {
+          const sem = grupos[grupo].semilleros[s];
+          const semilleroDiv = document.createElement("div");
+          semilleroDiv.className = "semillero-card";
+          semilleroDiv.innerHTML = `
+            <h5>Semillero: ${s}</h5>
+            <p class="section-title">Estudiantes</p>
+            <ul>${sem.estudiantes.map(e => `<li>${e.nombre} (${e.codigo}, ${e.carrera})</li>`).join("") || "<li>No hay estudiantes</li>"}</ul>
+            <p class="section-title">Actividades</p>
+            <ul>${sem.actividades.map(a => `<li><strong>${a.tipo}</strong> - ${a.fecha} ${a.hora} (${a.limite} cupos)<br><em>${a.resumen}</em></li>`).join("") || "<li>No hay actividades</li>"}</ul>
+          `;
+          divGrupo.appendChild(semilleroDiv);
+        });
+
+        listados.appendChild(divGrupo);
+      });
+    }
+  </script>
+</body>
+</html>
